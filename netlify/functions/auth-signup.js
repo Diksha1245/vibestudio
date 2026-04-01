@@ -6,6 +6,10 @@ const { query, initDb, json } = require('./_db');
 const { signToken } = require('./_auth');
 
 exports.handler = async (event) => {
+  console.log("[auth-signup] FUNCTION INVOKED");
+  console.log("[auth-signup] METHOD:", event.httpMethod);
+  console.log("[auth-signup] PATH:", event.path);
+
   const origin = event.headers?.origin;
 
   if (event.httpMethod === 'OPTIONS') {
