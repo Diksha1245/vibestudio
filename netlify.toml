@@ -1,0 +1,110 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# ─── API route rewrites → Netlify Functions ───────────────────────────────────
+
+# Auth
+[[redirects]]
+  from = "/api/auth/signup"
+  to   = "/.netlify/functions/auth-signup"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/login"
+  to   = "/.netlify/functions/auth-login"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/logout"
+  to   = "/.netlify/functions/auth-logout"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/me"
+  to   = "/.netlify/functions/auth-me"
+  status = 200
+
+# Pages (authenticated CRUD) — list + create
+[[redirects]]
+  from = "/api/pages"
+  to   = "/.netlify/functions/pages"
+  status = 200
+
+# Pages (authenticated CRUD) — single page + actions (:id/publish etc.)
+[[redirects]]
+  from = "/api/pages/*"
+  to   = "/.netlify/functions/page"
+  status = 200
+
+# Public — fetch published page by slug
+[[redirects]]
+  from = "/api/public/pages/*"
+  to   = "/.netlify/functions/public-view"
+  status = 200
+
+# ─── SPA client-side routing ──────────────────────────────────────────────────
+
+# Dashboard
+[[redirects]]
+  from = "/app"
+  to   = "/app.html"
+  status = 200
+
+# Editor (with optional query params like ?id=...)
+[[redirects]]
+  from = "/editor"
+  to   = "/editor.html"
+  status = 200
+
+# Auth pages
+[[redirects]]
+  from = "/login"
+  to   = "/auth.html"
+  status = 200
+
+[[redirects]]
+  from = "/signup"
+  to   = "/auth.html"
+  status = 200
+
+# Published public pages
+[[redirects]]
+  from = "/p/:slug"
+  to   = "/public-page.html"
+  status = 200
+
+# Fallback — send everything else to index
+[[redirects]]
+  from = "/*"
+  to   = "/index.html"
+  status = 200
+
+# ─── Security headers ─────────────────────────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  for = "/netlify/functions/*"
+  [headers.values]
+    Cache-Control = "no-store"
+
+# Cache static assets aggressively
+[[headers]]
+  for = "*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# ─── Functions config ─────────────────────────────────────────────────────────
+[functions]
+  node_bundler = "esbuild"
