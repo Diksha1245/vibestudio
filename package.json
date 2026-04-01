@@ -1,0 +1,22 @@
+{
+  "name": "vibekit-studio-functions",
+  "version": "1.0.0",
+  "description": "Netlify serverless functions for VibeKit Studio",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  },
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'No build step required for vanilla HTML + Netlify Functions'",
+    "deploy": "netlify deploy --prod"
+  }
+}

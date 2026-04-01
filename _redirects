@@ -1,0 +1,21 @@
+# VibeKit Studio — Netlify _redirects
+# NOTE: netlify.toml takes precedence. This file is a fallback safety net.
+
+# API → Functions (must come BEFORE the SPA catch-all)
+/api/auth/signup          /.netlify/functions/auth-signup    200
+/api/auth/login           /.netlify/functions/auth-login     200
+/api/auth/logout          /.netlify/functions/auth-logout    200
+/api/auth/me              /.netlify/functions/auth-me        200
+/api/pages                /.netlify/functions/pages          200
+/api/pages/*              /.netlify/functions/page           200
+/api/public/pages/*       /.netlify/functions/public-view    200
+
+# App routes → HTML shells
+/app                      /app.html                          200
+/editor                   /editor.html                       200
+/login                    /auth.html                         200
+/signup                   /auth.html                         200
+/p/:slug                  /public-page.html                  200
+
+# SPA fallback — must be LAST
+/*                        /index.html                        200
