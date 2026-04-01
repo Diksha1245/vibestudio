@@ -3,7 +3,11 @@
   functions = "netlify/functions"
 
 # ─── API route rewrites → Netlify Functions ───────────────────────────────────
-
+[[redirects]]
+  from = "/api/*"
+  to   = "/.netlify/functions/:splat"
+  status = 200
+  
 # Auth
 [[redirects]]
   from = "/api/auth/signup"
