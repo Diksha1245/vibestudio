@@ -854,6 +854,11 @@ input.success-input { border-color: var(--success) !important; box-shadow: 0 0 0
 </div>
 
 <script>
+/* ── Auth guard: already logged in → skip to app ── */
+(function() {
+  if (localStorage.getItem('vk_token')) window.location.replace('/app');
+})();
+
 /* ── Panel switch ── */
 const panelLogin  = document.getElementById('panelLogin');
 const panelSignup = document.getElementById('panelSignup');
@@ -994,13 +999,33 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
 
   const btn = document.getElementById('loginBtn');
   btn.classList.add('loading');
-  // Simulate API call — replace with: await fetch('/api/auth/login', {...})
-  await new Promise(r => setTimeout(r, 1400));
-  btn.classList.remove('loading');
 
-  // On success:
-  showToast('Welcome back! Redirecting…', 'var(--success)');
-  setTimeout(() => window.location.href = '/app', 1200);
+  try {
+    const res  = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.value.trim(), password: pw.value }),
+    });
+    const data = await res.json();
+    btn.classList.remove('loading');
+
+    if (!res.ok) {
+      showToast(data.error || 'Login failed. Please try again.', 'var(--danger)');
+      setErr(email, document.getElementById('loginEmailErr'), true);
+      setErr(pw,    document.getElementById('loginPwErr'),    true);
+      return;
+    }
+
+    // Store token + user
+    localStorage.setItem('vk_token', data.token);
+    localStorage.setItem('vk_user',  JSON.stringify(data.user));
+
+    showToast('Welcome back! Redirecting…', 'var(--success)');
+    setTimeout(() => window.location.href = '/app', 900);
+  } catch (err) {
+    btn.classList.remove('loading');
+    showToast('Network error — please check your connection.', 'var(--danger)');
+  }
 });
 
 /* ── Signup submit ── */
@@ -1023,12 +1048,40 @@ document.getElementById('signupForm').addEventListener('submit', async e => {
 
   const btn = document.getElementById('signupBtn');
   btn.classList.add('loading');
-  // Simulate API call — replace with: await fetch('/api/auth/signup', {...})
-  await new Promise(r => setTimeout(r, 1600));
-  btn.classList.remove('loading');
 
-  showToast('Account created! Setting up your dashboard…', 'var(--success)');
-  setTimeout(() => window.location.href = '/app', 1200);
+  try {
+    const res  = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name:     `${first.value.trim()} ${last.value.trim()}`,
+        email:    email.value.trim(),
+        password: pw.value,
+      }),
+    });
+    const data = await res.json();
+    btn.classList.remove('loading');
+
+    if (!res.ok) {
+      showToast(data.error || 'Signup failed. Please try again.', 'var(--danger)');
+      // Highlight the relevant field if possible
+      if (data.error?.toLowerCase().includes('email')) {
+        setErr(email, document.getElementById('signupEmailErr'), true);
+        document.getElementById('signupEmailErr').textContent = `⚠ ${data.error}`;
+      }
+      return;
+    }
+
+    // Store token + user
+    localStorage.setItem('vk_token', data.token);
+    localStorage.setItem('vk_user',  JSON.stringify(data.user));
+
+    showToast('Account created! Setting up your dashboard…', 'var(--success)');
+    setTimeout(() => window.location.href = '/app', 900);
+  } catch (err) {
+    btn.classList.remove('loading');
+    showToast('Network error — please check your connection.', 'var(--danger)');
+  }
 });
 
 /* ── Google OAuth placeholder ── */
