@@ -352,7 +352,8 @@ async function loadPage() {
     if (!res.ok) { showError(); return; }
     const data = await res.json();
     const page = data.page || data;
-    if (!page || page.status !== 'published') { showError(); return; }
+    // The API already filters WHERE status = 'published' — if we got a page object, it's published
+    if (!page || !page.id) { showError(); return; }
 
     // Track view (fire and forget)
     fetch(`/api/public/pages/${slug}/view`, { method: 'POST' }).catch(() => {});
