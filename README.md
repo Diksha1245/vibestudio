@@ -8,7 +8,7 @@ A full-stack web app where users pick a design vibe, build a themed mini-site us
 
 ## 🚀 Live Demo
 
-**Deployed URL:** `https://vibekit-studio.netlify.app`
+**Deployed URL:** `https://vibestudiomain.netlify.app`
 
 **Test credentials:**
 - Email: `test@vibekit.studio`
