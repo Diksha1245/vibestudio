@@ -55,6 +55,17 @@ body::before {
 a { color: inherit; text-decoration: none; }
 button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
 
+/* ─── ACCESSIBILITY: focus-visible rings ─── */
+:focus-visible {
+  outline: 2px solid var(--accent2);
+  outline-offset: 2px;
+}
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--accent2);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* ─── LAYOUT ─── */
 .shell { display: flex; min-height: 100vh; }
 
@@ -281,6 +292,10 @@ button { cursor: pointer; border: none; background: none; font: inherit; color: 
   transition: opacity 0.2s;
 }
 .page-card:hover .page-actions { opacity: 1; }
+/* Touch devices: always show actions (no hover available) */
+@media (hover: none) {
+  .page-actions { opacity: 1; }
+}
 .action-btn {
   width: 30px; height: 30px;
   background: rgba(8,8,16,0.85);
@@ -294,6 +309,9 @@ button { cursor: pointer; border: none; background: none; font: inherit; color: 
   color: var(--text);
 }
 .action-btn:hover { background: var(--surface2); border-color: var(--border-hi); }
+@media (max-width: 768px) {
+  .action-btn { width: 44px; height: 44px; font-size: 16px; }
+}
 
 /* ─── EMPTY STATE ─── */
 .empty-state {

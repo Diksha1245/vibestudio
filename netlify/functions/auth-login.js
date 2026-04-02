@@ -2,7 +2,7 @@
 // POST /api/auth/login
 
 const bcrypt = require('bcryptjs');
-const { query, initDb, json } = require('./_db');
+const { query, initDb, json, corsHeaders } = require('./_db');
 const { signToken } = require('./_auth');
 
 exports.handler = async (event) => {
@@ -26,7 +26,16 @@ exports.handler = async (event) => {
 
     const token = signToken({ userId: user.id, email: user.email });
 
-    return json(200, { token, user: { id: user.id, name: user.name, email: user.email } }, origin);
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        // httpOnly cookie — preferred per spec; client also receives token in body for localStorage fallback
+        'Set-Cookie': `vk_token=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=604800`,
+        ...corsHeaders(origin),
+      },
+      body: JSON.stringify({ token, user: { id: user.id, name: user.name, email: user.email } }),
+    };
   } catch (err) {
     console.error('Login error:', err);
     return json(500, { error: 'Internal server error' }, origin);

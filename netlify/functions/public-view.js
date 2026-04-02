@@ -100,6 +100,47 @@ exports.handler = async (event) => {
         [pageId, name.trim(), email.toLowerCase().trim(), message.trim()]
       );
 
+      // ── Email notification via Resend (optional — gracefully skipped if key missing) ──
+      const resendKey = process.env.RESEND_API_KEY;
+      if (resendKey) {
+        try {
+          // Fetch page owner's email so we can notify them
+          const ownerResult = await query(
+            `SELECT u.email AS owner_email, p.title AS page_title
+             FROM pages p JOIN users u ON p.user_id = u.id
+             WHERE p.id = $1`,
+            [pageId]
+          );
+          const owner = ownerResult.rows[0];
+          if (owner) {
+            await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${resendKey}`,
+              },
+              body: JSON.stringify({
+                from: 'VibeKit Studio <notifications@vibekit-studio.netlify.app>',
+                to: [owner.owner_email],
+                subject: `New contact message on "${owner.page_title}"`,
+                html: `
+                  <p>You received a new contact form submission on your VibeKit page <strong>${owner.page_title}</strong>.</p>
+                  <table style="border-collapse:collapse;width:100%;max-width:520px;">
+                    <tr><td style="padding:8px 0;font-weight:600;color:#555;">Name</td><td style="padding:8px 0;">${name.trim()}</td></tr>
+                    <tr><td style="padding:8px 0;font-weight:600;color:#555;">Email</td><td style="padding:8px 0;">${email.toLowerCase().trim()}</td></tr>
+                    <tr><td style="padding:8px 0;font-weight:600;color:#555;vertical-align:top;">Message</td><td style="padding:8px 0;white-space:pre-wrap;">${message.trim()}</td></tr>
+                  </table>
+                  <p style="margin-top:16px;color:#888;font-size:13px;">Sent via VibeKit Studio · <a href="https://vibekit-studio.netlify.app">vibekit-studio.netlify.app</a></p>
+                `,
+              }),
+            });
+          }
+        } catch (emailErr) {
+          // Email failure must never break the contact form — log and continue
+          console.error('Resend email error (non-fatal):', emailErr.message);
+        }
+      }
+
       return json(201, { success: true, message: 'Message received!' }, origin);
     }
 

@@ -122,6 +122,9 @@ npm run deploy
 |---|---|---|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host/db?sslmode=require` |
 | `JWT_SECRET` | JWT signing secret (min 32 chars) | `super-secret-random-string-here` |
+| `RESEND_API_KEY` | (Optional) Resend API key for contact form email notifications | `re_xxxxxxxxxxxx` |
+
+> **Note:** `RESEND_API_KEY` is optional. If not set, contact submissions are still stored in the database; the email step is silently skipped.
 
 ---
 
@@ -200,17 +203,23 @@ Editor preview toggle actually changes iframe/container width (not just CSS zoom
 
 1. **Image uploads vs URLs** — Gallery sections currently use image URLs. Next step: integrate Cloudinary or Supabase Storage for drag-and-drop uploads with automatic optimization.
 
-2. **JWT in localStorage vs httpOnly cookie** — localStorage is XSS-vulnerable. For production, I'd fully migrate to httpOnly cookie + CSRF token pattern, sacrificing some dev-experience simplicity.
+2. **JWT dual delivery (httpOnly cookie + localStorage)** — Both signup and login now set a `vk_token` httpOnly cookie (Secure, SameSite=Strict, 7-day) AND return the token in the response body. The client stores it in localStorage as a fallback for local Netlify CLI dev (where Secure cookies may not be set). In production, the httpOnly cookie is the authoritative session; the logout endpoint clears it server-side. Next improvement: remove the localStorage path entirely and migrate to a pure cookie + CSRF token pattern.
 
 3. **No rate limiting** — The `/api/public/pages/:slug/view` endpoint could be spammed. Next: add Redis-backed rate limiting per IP (Upstash is a natural fit with Netlify Functions).
 
-4. **Contact form emails** — Submissions are stored in DB but not emailed. Next: add Resend or Nodemailer so page owners get an email notification on new contact submissions.
+4. **Contact form emails via Resend** — Submissions are stored in DB and optionally emailed to the page owner via [Resend](https://resend.com). Email is triggered server-side in `public-view.js` if `RESEND_API_KEY` is set; failures are caught and logged without breaking the form. Next: add rate-limiting per page per IP to prevent submission spam.
 
 5. **Slug auto-generation collision UX** — Currently collisions silently append `-2`, `-3` etc. Better UX would show the final slug in the editor before save and let the user override it inline.
 
 ---
 
-## 📹 Screen Recording
+## 🎨 Design Extras (3 Chosen)
+
+1. **Subtle animations** — Scroll-triggered section reveals (`IntersectionObserver` + CSS `@keyframes`) on the landing page; button hover lift + shadow transitions; modal entrance animation (`scale(0.95) → scale(1)`).
+
+2. **Micro-interactions** — Every interactive element has distinct hover, focus, and pressed states: nav links (background fill), page cards (translateY + shadow), CTA buttons (translateY + glow box-shadow), action buttons (border-color + background), publish toggle (color swap + dot pulse), toast notifications (slide-in).
+
+3. **Accessibility pass** — All interactive elements have `focus-visible` outline rings using `var(--accent2)` at 2px offset. Touch targets on mobile are enforced at ≥44px for primary actions. Navigation works fully without hover (action buttons always visible via `@media (hover: none)`). Color contrast checked: accent on dark bg passes AA at all body sizes.
 
 A 1–2 minute screen recording demonstrating:
 - Landing page at mobile (375px) + tablet (768px)
@@ -221,6 +230,3 @@ A 1–2 minute screen recording demonstrating:
 > See `screen-recording.mp4` in the submission email.
 
 ---
-
-Built with care by **[Your Name]** for Purple Merit Technologies · April 2026
-# vibestudio
