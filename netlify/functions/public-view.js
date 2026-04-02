@@ -113,32 +113,52 @@ exports.handler = async (event) => {
           );
           const owner = ownerResult.rows[0];
           if (owner) {
-            await fetch('https://api.resend.com/emails', {
+            // Use the RESEND_FROM env var if set (must be a Resend-verified domain).
+            // Falls back to onboarding@resend.dev which works for testing without domain setup.
+            const fromAddress = process.env.RESEND_FROM || 'VibeKit Studio <onboarding@resend.dev>';
+
+            // node-fetch fallback for Node < 18
+            const fetchFn = typeof fetch !== 'undefined' ? fetch : require('node-fetch');
+
+            const resendRes = await fetchFn('https://api.resend.com/emails', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${resendKey}`,
               },
               body: JSON.stringify({
-                from: 'VibeKit Studio <notifications@vibekit-studio.netlify.app>',
+                from: fromAddress,
                 to: [owner.owner_email],
                 subject: `New contact message on "${owner.page_title}"`,
                 html: `
-                  <p>You received a new contact form submission on your VibeKit page <strong>${owner.page_title}</strong>.</p>
-                  <table style="border-collapse:collapse;width:100%;max-width:520px;">
-                    <tr><td style="padding:8px 0;font-weight:600;color:#555;">Name</td><td style="padding:8px 0;">${name.trim()}</td></tr>
-                    <tr><td style="padding:8px 0;font-weight:600;color:#555;">Email</td><td style="padding:8px 0;">${email.toLowerCase().trim()}</td></tr>
-                    <tr><td style="padding:8px 0;font-weight:600;color:#555;vertical-align:top;">Message</td><td style="padding:8px 0;white-space:pre-wrap;">${message.trim()}</td></tr>
-                  </table>
-                  <p style="margin-top:16px;color:#888;font-size:13px;">Sent via VibeKit Studio · <a href="https://vibekit-studio.netlify.app">vibekit-studio.netlify.app</a></p>
+                  <div style="font-family:sans-serif;max-width:520px;margin:0 auto;">
+                    <h2 style="color:#1a1a1a;margin-bottom:4px;">New contact message</h2>
+                    <p style="color:#666;margin-top:0;">Someone filled out the contact form on your VibeKit page <strong>${owner.page_title}</strong>.</p>
+                    <table style="border-collapse:collapse;width:100%;margin:24px 0;background:#f9f9f9;border-radius:8px;overflow:hidden;">
+                      <tr><td style="padding:12px 16px;font-weight:600;color:#555;width:100px;border-bottom:1px solid #eee;">Name</td><td style="padding:12px 16px;border-bottom:1px solid #eee;">${name.trim()}</td></tr>
+                      <tr><td style="padding:12px 16px;font-weight:600;color:#555;border-bottom:1px solid #eee;">Email</td><td style="padding:12px 16px;border-bottom:1px solid #eee;"><a href="mailto:${email.toLowerCase().trim()}">${email.toLowerCase().trim()}</a></td></tr>
+                      <tr><td style="padding:12px 16px;font-weight:600;color:#555;vertical-align:top;">Message</td><td style="padding:12px 16px;white-space:pre-wrap;">${message.trim()}</td></tr>
+                    </table>
+                    <p style="color:#aaa;font-size:12px;">Sent via <a href="https://vibekit-studio.netlify.app" style="color:#7c5cfc;">VibeKit Studio</a></p>
+                  </div>
                 `,
               }),
             });
+
+            // Log result so Netlify function logs show success/failure clearly
+            const resendData = await resendRes.json();
+            if (!resendRes.ok) {
+              console.error('[Resend] Failed to send email. Status:', resendRes.status, 'Body:', JSON.stringify(resendData));
+            } else {
+              console.log('[Resend] Email sent. ID:', resendData.id);
+            }
           }
         } catch (emailErr) {
           // Email failure must never break the contact form — log and continue
-          console.error('Resend email error (non-fatal):', emailErr.message);
+          console.error('[Resend] Unexpected error (non-fatal):', emailErr.message);
         }
+      } else {
+        console.log('[Contact] RESEND_API_KEY not set — email skipped, submission saved to DB only.');
       }
 
       return json(201, { success: true, message: 'Message received!' }, origin);
